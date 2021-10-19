@@ -20,7 +20,7 @@ class Setup_Window(tk.Tk):
     def __init__(self):
         """Set up Window"""
 
-        tk.TK.__init__(self)
+        tk.Tk.__init__(self)
         self.title('Calibrate PONI File')
 
         """Create and place labels"""
