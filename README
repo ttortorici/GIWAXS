@@ -1,1 +1,21 @@
 This repo is for analyzing GIWAXS tifs
+
+Instructions:
+
+in conda command prompt (windows) or terminal (unix)
+    conda create --name GIWAXS
+    conda install git
+    conda install numpy
+    pip install git+https://github.com/ronpandolfi/pygix.git
+    conda install -c conda-forge pyopencl
+    pip install pyqt5
+
+To open calibration GUI
+    pyFAI-calib2
+
+Wavelength = 1.54185 A
+Calibrant: AgBh
+pixel size: 75x75 um
+
+To calibrate:
+    open pyFAI-calib2

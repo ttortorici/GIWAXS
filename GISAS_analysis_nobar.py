@@ -140,7 +140,7 @@ import glob
 
 # make sure this array is the same size as tif image.
 # you can find this in pyFAI-calib2 tif_filename
-array = np.zeros((1102,3070))
+array = np.zeros((3072,3072))
 #set name for files to be averaged, X50*
 
 #this pulls all tif files in the working directory
@@ -163,7 +163,7 @@ print(a)
 # print(output[i])
 
 # again make sure this is the same size as the tif image
-sum0 = np.zeros((1102,3070))
+sum0 = np.zeros((3072,3072))
 
 # normalizing data
 for i in range(0, a):
