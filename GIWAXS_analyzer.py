@@ -7,9 +7,6 @@ import matplotlib.pyplot as plt
 import pylab
 from pylab import MultipleLocator, savefig, mpl
 import matplotlib.gridspec as gridspec
-# import pyFAI
-# from pyFAI.multi_geometry import MultiGeometry
-# from pyFAI.calibrant import get_calibrant
 import pygix
 
 
@@ -96,7 +93,7 @@ def main():
     plt.plot(q, i_ip, label="in plane")
     plt.legend()
     ending = 'lin_1D.png'
-    filename1D = 'filename' + ending
+    filename1D = 'processed_data' + os.sep + 'filename' + ending
     savefig(filename1D, bbox_inches='tight', dpi=300)
 
     # log plots
@@ -118,7 +115,7 @@ def main():
     plt.legend()
 
     ending = 'log_1D.png'
-    filename1D = 'filename' + ending
+    filename1D = 'processed_data' + os.sep + 'filename' + ending
     savefig(filename1D, bbox_inches='tight', dpi=300)
 
     # font1 = {'color':  'black','size': 25}
@@ -190,7 +187,7 @@ def load_calibration():
 
 
 def load_data():
-    global data_path_g
+    global data_path_g, flip
     data = fabio.open(data_path_g).data
     del data_path_g
     return data
