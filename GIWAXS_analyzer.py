@@ -1,11 +1,14 @@
 import tkinter as tk
+from tkinter import filedialog
 import os
 import pygix
 import fabio
 import numpy as np
+import matplotlib.pyplot as plt
+import PIL
 
 
-"""Globals that the setup window will alter"""
+"""Globals that the setup window will alter and then get deleted after use"""
 sample_orientation_g = -1
 incident_angle_g = -1.
 cal_path_g = ''
@@ -13,44 +16,53 @@ data_path_g = ''
 
 
 def main():
-    global sample_orientation_g, incident_angle_g, cal_path_g, data_path_g
     Setup_Window().mainloop()
-    sample_orientation = sample_orientation_g
-    incident_angle = incident_angle_g
-    cal_path = cal_path_g
-    data_path = data_path_g
-    del sample_orientation_g
-    del incident_angle_g
-    del cal_path_g
-    del data_path_g
-    # print(sample_orientation, incident_angle, cal_path, data_path)
 
-    pg = load_calibration(cal_path)
+    pg = load_calibration()
+    data = load_data()
 
-    pg.tilt_angle = 0
+    PIL.Image.fromarray(data).save('test.png')
 
-    data = fabio.open(data_path).data
-    # pixel_dimensions = np.shape(data)
+    return data
+    # line cuts and Plotting
+    '''plt.rcParams.update({'mathtext.default':  'regular'})
+    plt.rcParams['font.family'] = "sans-serif"
+    plt.rcParams['font.sans-serif'] = "Arial"
+    plt.rcParams['text.usetex'] = False
 
-    return pg, data
+    # this produces the line cuts using pygix
+    i_oop, q = pg.profile_sector(data, npt=1000, chi_pos=0, chi_width=30,
+                                 radial_range=(0, 2.5), unit='q_A^-1', correctSolidAngle=False, method="bbox")
+    i_ip, q = pg.profile_sector(data, npt=1000, chi_pos=78, chi_width=10,
+                                radial_range=(0, 2.5), unit='q_A^-1', correctSolidAngle=False, method="bbox")'''
 
 
 def load_calibration():
-    global cal_path_g
+    global cal_path_g, sample_orientation_g, incident_angle_g
     pg = pygix.Transform()
     pg.load(cal_path_g)
-    pg.sample_orientation = sample_orientation
+    pg.sample_orientation = sample_orientation_g
     pg.incident_angle = incident_angle_g
     print(pg)
+    pg.title_angle = 0
+    del sample_orientation_g
+    del incident_angle_g
+    del cal_path_g
     return pg
 
+
+def load_data():
+    global data_path_g
+    data = fabio.open(data_path_g).data
+    del data_path_g
+    return data
 
 def get_file(ftype='tif', init_dir=os.getcwd()):
     """Opens dialog box to get location of desired file"""
     if not ftype.lower() in ['tif', 'poni']:
         raise ValueError('invalid filetype to retrieve')
-    filename = tk.filedialog.askopenfilename(initialdir=init_dir, title=f'Select {ftype.upper()}',
-                                             filetypes=((f'{ftype.upper()}', f'*.{ftype.lower()}',), ('all', '*.*')))
+    filename = filedialog.askopenfilename(initialdir=init_dir, title=f'Select {ftype.upper()}',
+                                          filetypes=((f'{ftype.upper()}', f'*.{ftype.lower()}',), ('all', '*.*')))
     return filename
 
 
@@ -152,12 +164,12 @@ class Setup_Window(tk.Tk):
                                                                         sticky=tk.E + tk.W)
 
     def open_cal(self):
-        calibration_path = get_file(ftype='poni', dir=Setup_Window.default_calibration_path)
+        calibration_path = get_file(ftype='poni', init_dir=Setup_Window.default_calibration_path)
         self.calibration_path_entry.delete(0, tk.END)
         self.calibration_path_entry.insert(0, calibration_path)
 
     def open_data(self):
-        data_path = get_file(ftype='tif', dir=Setup_Window.default_data_path)
+        data_path = get_file(ftype='tif', init_dir=Setup_Window.default_data_path)
         self.data_path_entry.delete(0, tk.END)
         self.data_path_entry.insert(0, data_path)
 

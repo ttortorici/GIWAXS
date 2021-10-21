@@ -1,7 +1,7 @@
 This repo is for analyzing GIWAXS tifs
 
-Instructions:
 
+Instructions to set up conda environment:
 in conda command prompt (windows) or terminal (unix)
     conda create --name GIWAXS
     conda install git
@@ -10,12 +10,19 @@ in conda command prompt (windows) or terminal (unix)
     conda install -c conda-forge pyopencl
     pip install pyqt5
 
+
+pygix documentation: https://github.com/tgdane/pygix/wiki
+pyFAI documentation: https://pyfai.readthedocs.io/en/master/index.html
+
+
 To open calibration GUI
     pyFAI-calib2
 
-Wavelength = 1.54185 A
-Calibrant: AgBh
-pixel size: 75x75 um
 
-To calibrate:
-    open pyFAI-calib2
+Some Experimental setup information:
+    Wavelength = 1.54185 A
+    WAXS Calibrant: AgBh
+    pixel size: 75x75 um
+
+#To calibrate:
+#    open pyFAI-calib2
