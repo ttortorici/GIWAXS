@@ -4,6 +4,7 @@ This repo is for analyzing GIWAXS tifs
 Instructions to set up conda environment:
 in conda command prompt (windows) or terminal (unix)
     conda create --name GIWAXS
+    conda activate GIWAXS
     conda install git
     conda install numpy
     pip install git+https://github.com/ronpandolfi/pygix.git
