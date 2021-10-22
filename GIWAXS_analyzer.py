@@ -177,9 +177,21 @@ def load_calibration():
     pg = pygix.Transform()
     pg.load(cal_path_g)
     pg.sample_orientation = sample_orientation_g
-    pg.incident_angle = incident_angle_g
-    print(pg)
+    pg.incident_angle = incident_angle_g  # * np.pi / 180.
     pg.title_angle = 0
+
+    print('\n\n---------------CALIBRATING---------------')
+    print(f'\nCalibrating with:\n    {cal_path_g}')
+    sample_orientation = 'horizontal' if sample_orientation_g == 1 else 'vertical'
+    print(f'\nWith a {sample_orientation} sample,')
+    print(f'and an incident angle of {incident_angle_g}\u00B0')
+
+    print(f'\nX-Ray wavelength is {pg._wavelength * 1e10} A')
+    print(f'\nDetector-sample distance is {pg._dist * 1e3} mm')
+    print(f'\nDetector pixel size is {pg.detector._pixel1 * 1e6} x {pg.detector._pixel2 * 1e6} \u03BCm')
+    print(f'\nBeam center is ({pg._poni2 / pg.detector._pixel1}, {pg._poni1 / pg.detector._pixel2}) pixels')
+    print(f'\nPoint of normal incidence is ({pg._poni1 * 1e3}, {pg._poni2 * 1e3}) mm')
+    print(f'\nTilt angle is {pg._tilt_angle}\u00B0\n')
     del sample_orientation_g
     del incident_angle_g
     del cal_path_g
@@ -187,10 +199,13 @@ def load_calibration():
 
 
 def load_data():
-    global data_path_g, flip
+    global data_path_g
+    print('\n\n---------------LOADING DATA---------------')
     data = fabio.open(data_path_g).data
+    print(f'\nLoading data:\n    {data_path_g}')
     del data_path_g
     return data
+
 
 def get_file(ftype='tif', init_dir=os.getcwd()):
     """Opens dialog box to get location of desired file"""
@@ -208,7 +223,7 @@ class Setup_Window(tk.Tk):
     default_calibration_path = os.getcwd() + os.sep + 'calibration'
     default_calibration_fname = 'poni.poni'
     default_data_path = os.getcwd() + os.sep + 'raw_data'
-    default_data_fname = 'TT5mm-01-benzeneTPP_60min.tif'
+    default_data_fname = 'TT5mm-01-benzeneTPP_60min_flip.tif'
 
     def __init__(self):
         """Set up Window"""
@@ -323,5 +338,4 @@ class Setup_Window(tk.Tk):
 
 
 if __name__ == '__main__':
-    print('start')
     main()

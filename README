@@ -25,5 +25,24 @@ Some Experimental setup information:
     WAXS Calibrant: AgBh
     pixel size: 75x75 um
 
-#To calibrate:
-#    open pyFAI-calib2
+To calibrate:
+    open gui in conda environment: pyFAI-calib2
+    under Acquisition: open image file of AgBh
+    under Detector, set Manual definition with pixel size 75x75um and detector size matching image
+    under Experiment settings: Wavelength: 1.54185 A; Calibrant: AgBh
+    Next >
+    draw mask
+    Next >
+    Select Peaks
+    Next >
+    select SAXS constraints
+    Fit
+    Next >
+    Save as PONI file...
+
+    This will give you a base PONI file that we may need to adjust the beam center (poni1 and poni2)
+    To fix this, exit the GUI and reopen it, and load in instead the file that we will study
+    Set everything the same.
+    We will likely have to set the peaks manually by eye and only fit one peak;
+    the goal is to just "flatten" out the cake & integration plot so that the origin can be found.
+    Save this PONI as well and then copy the Poni values into the other file to get the beam center right.
