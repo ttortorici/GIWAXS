@@ -24,62 +24,20 @@ def main():
     data = load_data()
 
     # line cuts and Plotting
-    plt.rcParams.update({'mathtext.default':  'regular'})
-    plt.rcParams['font.family'] = "sans-serif"
-    plt.rcParams['font.sans-serif'] = "Arial"
-    plt.rcParams['text.usetex'] = False
+    #plt.rcParams.update({'mathtext.default':  'regular'})
+    #plt.rcParams['font.family'] = "sans-serif"
+    #plt.rcParams['font.sans-serif'] = "Arial"
+    #plt.rcParams['text.usetex'] = False
 
-    # this produces the line cuts using pygix
+    """this produces the line cuts using pygix"""
+    # Out of plane
     i_oop, q = pg.profile_sector(data, npt=1000, chi_pos=0, chi_width=30,
                                  radial_range=(0, 2.5), unit='q_A^-1', correctSolidAngle=False, method="bbox")
+    # In plane
     i_ip, q = pg.profile_sector(data, npt=1000, chi_pos=78, chi_width=10,
                                 radial_range=(0, 2.5), unit='q_A^-1', correctSolidAngle=False, method="bbox")
 
-    ### Dezingering oop and ip data with threshold ratio 2
-    threshold = 2
-    counter = 0
-    check_ip = 0
-    check_oop = 0
-    while counter <= 997:
-        if (i_oop[counter] > threshold * i_oop[counter - 2]) or \
-                (i_oop[counter] > threshold * i_oop[counter + 2]):
-            i_oop[counter] = (i_oop[counter + 2] + i_oop[counter - 2]) / 2
-            check_oop = check_oop + 1
-        if (i_ip[counter] > threshold * i_ip[counter - 2]) or \
-                (i_ip[counter] > threshold * i_ip[counter + 2]):
-            i_ip[counter] = (i_ip[counter + 2] + i_ip[counter - 2]) / 2
-            check_ip = check_ip + 1
-        counter = counter + 1
-    # print(check_oop)
-    # print(check_ip)
-    ### Dezinger round 2
-    counter = 0
-    while counter <= 997:
-        if (i_oop[counter] > threshold * i_oop[counter - 2]) or \
-                (i_oop[counter] > threshold * i_oop[counter + 2]):
-            i_oop[counter] = (i_oop[counter + 2] + i_oop[counter - 2]) / 2
-            check_oop = check_oop + 1
-        if (i_ip[counter] > threshold * i_ip[counter - 2]) or \
-                (i_ip[counter] > threshold * i_ip[counter + 2]):
-            i_ip[counter] = (i_ip[counter + 2] + i_ip[counter - 2]) / 2
-            check_ip = check_ip + 1
-        counter = counter + 1
-    # print(check_oop)
-    # print(check_ip)
-    ### Dezinger round 3
-    counter = 0
-    while counter <= 997:
-        if (i_oop[counter] > threshold * i_oop[counter - 2]) or \
-                (i_oop[counter] > threshold * i_oop[counter + 2]):
-            i_oop[counter] = (i_oop[counter + 2] + i_oop[counter - 2]) / 2
-            check_oop = check_oop + 1
-        if (i_ip[counter] > threshold * i_ip[counter - 2]) or \
-                (i_ip[counter] > threshold * i_ip[counter + 2]):
-            i_ip[counter] = (i_ip[counter + 2] + i_ip[counter - 2]) / 2
-            check_ip = check_ip + 1
-        counter = counter + 1
-    # print(check_oop)
-    # print(check_ip)
+    # dezingering?????
 
     fig = plt.figure()
     plt.xlabel('q ($\AA^{-1}$)')
@@ -174,14 +132,16 @@ def main():
 
 def load_calibration():
     global cal_path_g, sample_orientation_g, incident_angle_g
+    print('\n\n---------------CALIBRATING---------------')
     pg = pygix.Transform()
     pg.load(cal_path_g)
+
+    print(f'\nCalibrating with:\n    {cal_path_g}')
+
     pg.sample_orientation = sample_orientation_g
     pg.incident_angle = incident_angle_g  # * np.pi / 180.
     pg.title_angle = 0
 
-    print('\n\n---------------CALIBRATING---------------')
-    print(f'\nCalibrating with:\n    {cal_path_g}')
     sample_orientation = 'horizontal' if sample_orientation_g == 1 else 'vertical'
     print(f'\nWith a {sample_orientation} sample,')
     print(f'and an incident angle of {incident_angle_g}\u00B0')
@@ -202,7 +162,7 @@ def load_data():
     global data_path_g
     print('\n\n---------------LOADING DATA---------------')
     data = fabio.open(data_path_g).data
-    print(f'\nLoading data:\n    {data_path_g}')
+    print(f'\nLoading data:\n    {data_path_g}\n')
     del data_path_g
     return data
 
@@ -216,12 +176,27 @@ def get_file(ftype='tif', init_dir=os.getcwd()):
     return filename
 
 
+def dezingering(i_oop, i_ip, threshold=2, zingers=3):
+    check_ip=0
+    check_oop=0
+    for _ in range(zingers):
+        for ii in range(2, len(i_oop) - 2):
+            if i_oop[ii] > threshold * i_oop[ii - 2] or i_oop[ii] > threshold * i_oop[ii + 2]:
+                i_oop[ii] = ( i_oop[ii + 2] + i_oop[ii - 2] ) / 2.
+                check_oop += 1
+            if i_ip[ii] > threshold * i_ip[ii - 2] or i_ip[ii] > threshold * i_ip[ii + 2]:
+                i_ip[ii] = ( i_in[ii + 2] + i_in[ii - 2] ) / 2.
+                check_ip += 1
+        print(check_oop)
+        print(check_ip)
+
+
 class Setup_Window(tk.Tk):
     FONT_SIZE = 10
     FONT = 'Arial'
     default_angle = '0.12'      # degrees
     default_calibration_path = os.getcwd() + os.sep + 'calibration'
-    default_calibration_fname = 'poni.poni'
+    default_calibration_fname = 'agbh.poni'
     default_data_path = os.getcwd() + os.sep + 'raw_data'
     default_data_fname = 'TT5mm-01-benzeneTPP_60min_flip.tif'
 
