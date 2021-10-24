@@ -23,58 +23,17 @@ def main():
     pg = load_calibration()
     data = load_data()
 
-    # line cuts and Plotting
-    #plt.rcParams.update({'mathtext.default':  'regular'})
-    #plt.rcParams['font.family'] = "sans-serif"
-    #plt.rcParams['font.sans-serif'] = "Arial"
-    #plt.rcParams['text.usetex'] = False
-
     """this produces the line cuts using pygix"""
     # Out of plane
     i_oop, q = pg.profile_sector(data, npt=1000, chi_pos=0, chi_width=30,
                                  radial_range=(0, 2.5), unit='q_A^-1', correctSolidAngle=False, method="bbox")
     # In plane
-    i_ip, q = pg.profile_sector(data, npt=1000, chi_pos=78, chi_width=10,
+    i_ip, _ = pg.profile_sector(data, npt=1000, chi_pos=78, chi_width=10,
                                 radial_range=(0, 2.5), unit='q_A^-1', correctSolidAngle=False, method="bbox")
 
     # dezingering?????
 
-    fig = plt.figure()
-    plt.xlabel('q ($\AA^{-1}$)')
-    plt.ylabel('Intensity (a.u.)')
-    # ###adjust xlim
-    plt.xlim((0.11, 2.2))
-    # plt.ylim((10,50))
-    plt.axes().xaxis.set_minor_locator(MultipleLocator(0.1))
-    plt.axes().yaxis.set_minor_locator(MultipleLocator(1))
-    plt.plot(q, i_oop, label="out of plane")
-    plt.plot(q, i_ip, label="in plane")
-    plt.legend()
-    ending = 'lin_1D.png'
-    filename1D = 'processed_data' + os.sep + 'filename' + ending
-    savefig(filename1D, bbox_inches='tight', dpi=300)
-
-    # log plots
-    font2 = {'family': 'Arial', 'color': 'black', 'weight': 'bold', 'size': 20}
-    fig = plt.figure()
-    plt.xlabel('q ($\AA^{-1}$)')
-    plt.ylabel('$log_{10}$ Intensity (a.u.)')
-    plt.yscale('log')
-    # plt.yticks(np.arange(1, 3, 5))
-    # ###adjust ylim
-    # plt.ylim((1.2, 3.5))
-    plt.xlim((0.1, 2.2))
-    # plt.xticks(np.arange(0.175, 2.175, 0.2))
-    plt.axes().xaxis.set_minor_locator(MultipleLocator(0.1))
-    log_i_oop = np.log10(i_oop)
-    log_i_ip = np.log10(i_ip)
-    plt.plot(q, log_i_oop, label="out of plane")
-    plt.plot(q, log_i_ip, label="in plane")
-    plt.legend()
-
-    ending = 'log_1D.png'
-    filename1D = 'processed_data' + os.sep + 'filename' + ending
-    savefig(filename1D, bbox_inches='tight', dpi=300)
+    plot_line_cuts(q, i_oop, i_ip)
 
     # font1 = {'color':  'black','size': 25}
     font1 = {'family': 'Arial', 'color': 'black', 'weight': 'bold', 'size': 30}
@@ -82,14 +41,14 @@ def main():
     i[i == 0] = np.nan
 
     # close('all')
-    fig = pylab.figure(figsize=(6, 6));
-    gs = gridspec.GridSpec(1, 1);
+    fig = pylab.figure(figsize=(6, 6))
+    gs = gridspec.GridSpec(1, 1)
     ax1 = plt.subplot(gs[0, 0])
     for ax in fig.get_axes():
-        ax.tick_params(which='both', color='k', labelsize=20);
-        ax.set_facecolor('k');
-        ax1.yaxis.set_ticks_position('both');
-        ax1.xaxis.set_ticks_position('both');
+        ax.tick_params(which='both', color='k', labelsize=20)
+        ax.set_facecolor('k')
+        ax1.yaxis.set_ticks_position('both')
+        ax1.xaxis.set_ticks_position('both')
         # play with norm to get color scale right
         norm = mpl.colors.Normalize(vmin=0, vmax=200)
     # norm = mpl.colors.SymLogNorm(linthresh=0.1, vmin=np.min(i), vmax=np.max(i))
@@ -100,10 +59,10 @@ def main():
     #           , vmax=7.0, vmin=3.0, cmap='jet', origin='lower')
     pylab.ylim([-0.1, 2.5])
     pylab.xlim([-2, 2])
-    ax1.xaxis.set_tick_params(width=1.5, length=5);
-    ax1.yaxis.set_tick_params(width=1.5, length=5);
-    ax1.set_xlabel('$q_{xy}$ ($\AA^{-1}$)', fontsize=16);
-    ax1.set_ylabel('$q_{z}$ ($\AA^{-1}$)', fontsize=16);
+    ax1.xaxis.set_tick_params(width=1.5, length=5)
+    ax1.yaxis.set_tick_params(width=1.5, length=5)
+    ax1.set_xlabel('$q_{xy}$ ($\AA^{-1}$)', fontsize=16)
+    ax1.set_ylabel('$q_{z}$ ($\AA^{-1}$)', fontsize=16)
     # norm = mpl.colors.Normalize(vmin=0,vmax=10) # colorbar range
     # sm = plt.cm.ScalarMappable(cmap='turbo',norm=norm)
     # sm.set_array([])
@@ -128,6 +87,44 @@ def main():
         writer.writerow(["Q (1/A)", "Intensity in plane (a.u.)", "Intensity out of plane (a.u.)"])
         for values in zip_longest(*l):
             writer.writerow(values)'''
+
+def plot_line_cuts(q, i_oop, i_ip):
+    fig = plt.figure()
+    plt.xlabel('q ($\AA^{-1}$)')
+    plt.ylabel('Intensity (a.u.)')
+    # ###adjust xlim
+    # plt.xlim((0.11, 2.2))
+    # plt.ylim((10,50))
+    plt.axes().xaxis.set_minor_locator(MultipleLocator(0.1))
+    plt.axes().yaxis.set_minor_locator(MultipleLocator(1))
+    plt.plot(q, i_oop, label="out of plane")
+    plt.plot(q, i_ip, label="in plane")
+    plt.legend()
+    ending = 'lin_1D.png'
+    filename1D = 'processed_data' + os.sep + 'filename' + ending
+    savefig(filename1D, bbox_inches='tight', dpi=300)
+
+    # log plots
+    font2 = {'family': 'Arial', 'color': 'black', 'weight': 'bold', 'size': 20}
+    fig = plt.figure()
+    plt.xlabel('q ($\AA^{-1}$)')
+    plt.ylabel('$log_{10}$ Intensity (a.u.)')
+    plt.yscale('log')
+    # plt.yticks(np.arange(1, 3, 5))
+    # ###adjust ylim
+    # plt.ylim((1.2, 3.5))
+    plt.xlim((0.1, 2.2))
+    # plt.xticks(np.arange(0.175, 2.175, 0.2))
+    # plt.axes().xaxis.set_minor_locator(MultipleLocator(0.1))
+    log_i_oop = np.log10(i_oop)
+    log_i_ip = np.log10(i_ip)
+    plt.plot(q, log_i_oop, label="out of plane")
+    plt.plot(q, log_i_ip, label="in plane")
+    plt.legend()
+
+    ending = 'log_1D.png'
+    filename1D = 'processed_data' + os.sep + 'filename' + ending
+    savefig(filename1D, bbox_inches='tight', dpi=300)
 
 
 def load_calibration():
