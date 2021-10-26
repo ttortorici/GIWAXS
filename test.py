@@ -3,29 +3,32 @@ import fabio
 import os
 
 
-def dezingering(data, thresh=4, attempts=1):
+def dezingering(data, thresh=2, attempts=1):
     print('\n---------------DEZINGERING DATA----------------')
     check = 0
     len_y, len_x = np.shape(data)
     look = 1
+    buff = 2
     max = data.max()
 
     for attempt in range(attempts):
-        down = data[:-look, :] > thresh * (data[look:, :] + 1)
-        up = data[look:, :] > thresh * (data[:-look, :] + 1)
-        right = data[:, :-look] > thresh * (data[:, look:] + 1)
-        left = data[:, look:] > thresh * (data[:, :-look] + 1)
+        '''down = data[:-look, :] > thresh * (data[look:, :] + buff)
+        up = data[look:, :] > thresh * (data[:-look, :] + buff)
+        right = data[:, :-look] > thresh * (data[:, look:] + buff)
+        left = data[:, look:] > thresh * (data[:, :-look] + buff)
 
         print(np.shape(data)[0]*np.shape(data)[1])
         print(np.sum(down))
         print(np.sum(up))
         print(np.sum(right))
-        print(np.sum(left))
+        print(np.sum(left))'''
 
-        down = data > thresh * (np.vstack([np.zeros(len_x), data[look:, :]]) + 1)
-        up = data > thresh * (np.vstack([data[:-look, :], np.zeros(len_x)]) + 1)
-        right = data > thresh * (np.append(np.zeros((len_y, 1)), data[:, look:], axis=1) + 1)
-        left = data > thresh * (np.append(data[:, :-look], np.zeros((len_y, 1)), axis=1) + 1)
+        down = data > thresh * (np.vstack([data[look:, :], np.zeros(len_x)]) + buff)
+        print(f'looking down: {down}')
+        data[down] =
+        up = data > thresh * (np.vstack([np.zeros(len_x), data[:-look, :]]) + buff)
+        right = data > thresh * (np.append(data[:, look:], np.zeros((len_y, 1)), axis=1) + buff)
+        left = data > thresh * (np.append(np.zeros((len_y, 1)), data[:, :-look], axis=1) + buff)
 
         print(np.shape(data)[0]*np.shape(data)[1])
         print(np.sum(down))

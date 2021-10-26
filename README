@@ -10,6 +10,7 @@ in conda command prompt (windows) or terminal (unix)
     pip install git+https://github.com/ronpandolfi/pygix.git
     conda install -c conda-forge pyopencl
     pip install pyqt5
+    #pip install opencv-python
 
 
 pygix documentation: https://github.com/tgdane/pygix/wiki

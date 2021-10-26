@@ -5,6 +5,8 @@ import tkinter as tk
 from tkinter import filedialog
 import os
 import glob
+from scipy import fftpack, ndimage
+import matplotlib.pylab as plt
 
 
 class Setup_Window(tk.Tk):
@@ -14,6 +16,8 @@ class Setup_Window(tk.Tk):
     default_output_path = f'{os.getcwd()}{os.sep}raw_data'
 
     def __init__(self):
+        self.data_flip = None
+
         """Set up Window"""
 
         tk.Tk.__init__(self)
@@ -114,6 +118,42 @@ class Setup_Window(tk.Tk):
         self.files_entry.delete(0, tk.END)
         self.files_entry.insert(0, str(files).strip('[').strip(']').replace("'", ''))
 
+    def low_pass_filter(self, keep_fraction):
+        print(f'\nAppling low pass filter with fractional cut off of {keep_fraction}')
+        plt.figure()
+        plt.imshow(self.data_flip)
+        data_fft = fftpack.fft2(self.data_flip)
+        data_fft2 = data_fft.copy()
+
+        def plot_spectrum(data_fft):
+            from matplotlib.colors import LogNorm
+            plt.imshow(np.abs(data_fft), norm=LogNorm(vmin=5))
+            plt.colorbar()
+        plt.figure()
+        plot_spectrum(data_fft)
+
+        r, c = data_fft2.shape
+        """set all rows with indices between r*keep_fraction and r*(1-keep_fraction) to 0"""
+        data_fft2[int(r*keep_fraction):int(r*(1-keep_fraction))] = 0
+        # data_fft2[0:int(r * keep_fraction)] = 0
+        """now with columns"""
+        data_fft2[:, int(c * keep_fraction):int(c*(1-keep_fraction))] = 0
+        # data_fft2[:, 0:int(c * keep_fraction)] = 0
+
+        plt.figure()
+        plot_spectrum(data_fft2)
+
+        self.data_flip = fftpack.ifft2(data_fft2).real
+
+        plt.figure()
+        plt.imshow(self.data_flip)
+
+        plt.show()
+        
+    def gaussian_filter(self, filtering):
+        self.data_flip = ndimage.gaussian_filter(self.data_flip, filtering)
+
+
     def start_flipping(self):
         """Get values from box"""
         os.chdir(self.path_entry.get())     # change current working directory
@@ -126,10 +166,14 @@ class Setup_Window(tk.Tk):
         for filename in filenames:
             print(f'    {filename}')
             data = fabio.open(filename).data
-            data_flip = np.flip(data)
+            self.data_flip = np.flip(data)
+            #if self.flip_entry.get():
+            if 1:
+                self.low_pass_filter(.1)
+                # self.gaussian_filter(4)
             fname = filename[:filename.find('.')]       # strip everything after the first '.'
-            save_name = f'{self.output_entry.get()}{os.sep}{fname}_flip.tif'
-            Image.fromarray(data_flip).save(save_name)
+            save_name = f'{self.output_entry.get()}{os.sep}{fname}_flip-d.tif'
+            Image.fromarray(self.data_flip).save(save_name)
         self.killWindow()
 
     def killWindow(self):
