@@ -15,25 +15,16 @@ sample_orientation_g = -1
 incident_angle_g = -1.
 cal_path_g = ''
 data_path_g = ''
+filename = ''
 
 
 def main():
     Setup_Window().mainloop()
 
     pg = load_calibration()
-    data = load_data()
+    data = dezingering(load_data(), threshold_multiplier=2, attempts=3)
 
-    """this produces the line cuts using pygix"""
-    # Out of plane
-    i_oop, q = pg.profile_sector(data, npt=1000, chi_pos=0, chi_width=30,
-                                 radial_range=(0, 2.5), unit='q_A^-1', correctSolidAngle=False, method="bbox")
-    # In plane
-    i_ip, _ = pg.profile_sector(data, npt=1000, chi_pos=78, chi_width=10,
-                                radial_range=(0, 2.5), unit='q_A^-1', correctSolidAngle=False, method="bbox")
-
-    # dezingering?????
-
-    plot_line_cuts(q, i_oop, i_ip)
+    plot_line_cuts(pg)
 
     # font1 = {'color':  'black','size': 25}
     font1 = {'family': 'Arial', 'color': 'black', 'weight': 'bold', 'size': 30}
@@ -73,12 +64,12 @@ def main():
     # cb = colorbar(sm, cax=cax)
     # cb.set_label(label='Intensity (arb. units)', fontdict=font1)
     ending = '_2D.png'
-    filename2D = 'processed_data' + os.sep + 'filename' + ending
+    filename2D = 'processed_data' + os.sep + filename + ending
 
     savefig(filename2D, bbox_inches='tight', dpi=600)
 
     ending = '.csv'
-    filenamecsv = 'filename' + ending
+    filenamecsv = filename + ending
 
     '''with open(filenamecsv.format(dataFile), "w+") as f:
         l = [q, i_ip, i_oop]
@@ -88,7 +79,36 @@ def main():
         for values in zip_longest(*l):
             writer.writerow(values)'''
 
+
+def sector_cut(pg, data, chi_center=0, chi_width=180., radial_range=(0, 2.5), filename=''):
+    """This saves a plot of a line cut using pygic
+    pg - calibration object
+    data - tif data set
+    chi_center - azimuthal angle starting on the z axis and moving clockwise positive [degrees]
+    chi_width = total angle of cut centered around chi_center [degrees]"""
+    i_linecut, q = pg.profile_sector(data, npt=1000, chi_pos=chi_center, chi_width=chi_width,
+                                     radial_range=radial_range, unit='q_A^-1', correctSolidAngle=False, method='bbox')
+    return q, i_linecut
+
+def plot_ip_oop_whole():
+    pass
+
+
 def plot_line_cuts(q, i_oop, i_ip):
+    global filename
+    """this produces the line cuts using pygix
+    chi_pos = azimuthal angle z=0 with clockwise positive [degrees]
+    chi_width = total angle centered around chi_pos [degrees]
+    radial_range = [q space]
+    correctSolidAngle = always False
+    method = 'bbox'"""
+    # Out of plane
+    i_oop, q = pg.profile_sector(data, npt=1000, chi_pos=0, chi_width=30,
+                                 radial_range=(0, 2.5), unit='q_A^-1', correctSolidAngle=False, method="bbox")
+    # In plane
+    i_ip, _ = pg.profile_sector(data, npt=1000, chi_pos=78, chi_width=10,
+                                radial_range=(0, 2.5), unit='q_A^-1', correctSolidAngle=False, method="bbox")
+
     fig = plt.figure()
     plt.xlabel('q ($\AA^{-1}$)')
     plt.ylabel('Intensity (a.u.)')
@@ -122,9 +142,7 @@ def plot_line_cuts(q, i_oop, i_ip):
     plt.plot(q, log_i_ip, label="in plane")
     plt.legend()
 
-    ending = 'log_1D.png'
-    filename1D = 'processed_data' + os.sep + 'filename' + ending
-    savefig(filename1D, bbox_inches='tight', dpi=300)
+    savefig(f'processed_data{os.sep}{filename}log_1D.png', bbox_inches='tight', dpi=300)
 
 
 def load_calibration():
@@ -156,10 +174,11 @@ def load_calibration():
 
 
 def load_data():
-    global data_path_g
+    global data_path_g, filename
     print('\n\n---------------LOADING DATA---------------')
     data = fabio.open(data_path_g).data
     print(f'\nLoading data:\n    {data_path_g}\n')
+    filename = data_path_g.replace('/', os.sep).split(os.sep)[-1].strip('.tif')
     del data_path_g
     return data
 
@@ -173,19 +192,44 @@ def get_file(ftype='tif', init_dir=os.getcwd()):
     return filename
 
 
-def dezingering(i_oop, i_ip, threshold=2, zingers=3):
-    check_ip=0
-    check_oop=0
-    for _ in range(zingers):
-        for ii in range(2, len(i_oop) - 2):
-            if i_oop[ii] > threshold * i_oop[ii - 2] or i_oop[ii] > threshold * i_oop[ii + 2]:
-                i_oop[ii] = ( i_oop[ii + 2] + i_oop[ii - 2] ) / 2.
-                check_oop += 1
-            if i_ip[ii] > threshold * i_ip[ii - 2] or i_ip[ii] > threshold * i_ip[ii + 2]:
-                i_ip[ii] = ( i_in[ii + 2] + i_in[ii - 2] ) / 2.
-                check_ip += 1
-        print(check_oop)
-        print(check_ip)
+def dezingering(data, threshold_multiplier=2, attempts=3):
+    print('\n---------------DEZINGERING DATA----------------')
+    check = 0
+    len_x, len_y = np.shape(data)
+    look = 2
+
+    """Shaper is a star burst cross of 1s with 0s in the corners and center. This grabs the nearest neighbors of
+    distance: look.
+    eg [[0, 0, 1, 0, 0],
+        [0, 1, 1, 1, 0],
+        [1, 1, 0, 1, 1],
+        [0, 1, 1, 1, 0],
+        [0, 0, 1, 0, 0]"""
+    shaper = np.ones((2 * look + 1, 2 * look + 1))
+    for i1 in range(2 * look + 1):
+        for j1 in range(2  * look + 1):
+            if abs(look - i1) + abs(look - j1) > look:
+                shaper[i1, j1] = 0.
+    shaper[look, look] = 0.
+
+    for attempt in range(attempts):
+        for i2 in range(look, len_x - look):
+            for j2 in range(look, len_y - look):
+                """Collects the values of the nearest neighbors"""
+                neighbors = data[i2 - look: i2 + look + 1, j2 - look: j2 + look + 1] * shaper
+
+                """Bool list takes the surrounding points to check if they're much bigger than their surroundings.
+                Will be a list of False if everything is fine"""
+                bool_list = data[i2, j2] * shaper > threshold_multiplier * neighbors
+                #print(data[i2 - look: i2 + look + 1, j2 - look: j2 + look + 1])
+                #print(bool_list)
+
+                """np.sum(bool_list) will be 0 if all data points are fine"""
+                if np.sum(bool_list):
+                    data[i2, j2] = (data[i2 - 1, j2] + data[i2 + 1, j2] + data[i2, j2 - 1] + data[i2, j2 + 1]) / 4.
+                    check += 1
+        print(f'Dezingering applied {attempt  + 1} times and smoothed {check} times total.')
+    return data
 
 
 class Setup_Window(tk.Tk):

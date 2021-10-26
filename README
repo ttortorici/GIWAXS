@@ -1,5 +1,5 @@
 This repo is for analyzing GIWAXS tifs
-
+https://pyfai.readthedocs.io/en/master/usage/cookbook/integration_with_python.html
 
 Instructions to set up conda environment:
 in conda command prompt (windows) or terminal (unix)
