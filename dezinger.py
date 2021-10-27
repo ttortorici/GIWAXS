@@ -1,55 +1,62 @@
-import pyFAI
 import numpy as np
+from PIL import Image, ImageDraw
+from scipy import fftpack, ndimage
 
-def getAI(fname='pyfai.poni'): return pyFAI.load(fname)
 
-def azimuthal_smoothing(img,ai,npt=1000,method=np.ma.median,mask=None,threshold=5,error_model=np.ma.std):
-  # make sure it is float (and create a copy even if is float)
-  img = img.astype(np.float);
-  img = np.ma.MaskedArray( data = img, mask = mask, copy = False )
+def low_pass_filter(img):
+    """Blur an image using an FFT"""
+    fft1 = fftpack.fftshift(fftpack.fft2(img))
 
-  if 'q_center' not in ai._cached_array: ai.integrate1d(img,npt)
-  if ai.get_darkcurrent() is not None: img -= ai.get_darkcurrent()
-  if ai._polarization is not None:     img /= ai._polarization
-  if ai._dssa is not None:             img /= ai._dssa
-  qarray = ai._cached_array['q_center']
-  if 'azimuthal_smoothing' not in ai._cached_array:
-    # make bins
-    q      = np.sort( qarray.ravel() )
-    delta_q = np.min( np.diff(q) )
-    bins = np.linspace(  q[0]-delta_q, q[-1] + delta_q,num=npt)
-    idx = np.digitize( qarray, bins )
-    ai._cached_array['azimuthal_smoothing'] = idx
-  idx = ai._cached_array['azimuthal_smoothing']; # avoid typing ...
-  for ibin in range(idx.max()):
-    pixels_in_bin = idx == ibin
-    values_in_bin = img[pixels_in_bin]
-    if values_in_bin.size == 0 or np.all(values_in_bin.mask): continue
-    indices_1d = np.argwhere(pixels_in_bin.ravel())
-    # average/median
-    reference  = method( values_in_bin )
-    error      = error_model( values_in_bin )
-    to_remove  = values_in_bin > reference + threshold*error
-    indices_1d = np.argwhere(pixels_in_bin.ravel())[to_remove]
-    img.ravel()[indices_1d] = reference
-  if ai._dssa is not None:             img *= ai._dssa
-  if ai._polarization is not None:     img *= ai._polarization
-  if ai.get_darkcurrent() is not None: img += ai.get_darkcurrent()
-  return img
+    y, x = img.shape
 
-def test(npt=1000):
-  import matplotlib.pyplot as plt
-  ai = getAI()
-  imgs = np.load('imgs_with_zinger.npy')[:5]
-  mask = np.load('mask.npy')
-  fig,ax=plt.subplots(2,len(imgs))
-  for iimg,img in enumerate(imgs):
-    q,i=ai.integrate1d(img,npt,unit="q_A^-1",mask=mask)
-    #ax[iimg].plot(q,i1)
-    img_d= azimuthal_smoothing(img,ai,npt=npt,mask=mask)
-    q,i_d=ai.integrate1d(img_d,npt,unit="q_A^-1",mask=mask)
-    ax[0,iimg].plot(q,i-i_d)
-    ax[1,iimg].imshow(img-img_d,clim=(0,10),aspect='auto')
+    r = y / 1.5  # Size of circle
+    bbox = ((x - r) / 2, (y - r) / 2, (x + r) / 2, (y + r) / 2)  # Create a box
 
-if __name__ == '__main__':
-  test()
+    low_pass = Image.new("L", (x, y), color=0)
+
+    draw1 = ImageDraw.Draw(low_pass)
+    draw1.ellipse(bbox, fill=1)
+
+    low_pass_array = np.array(low_pass)
+    filtered = np.multiply(fft1, low_pass_array)
+
+    ifft2 = np.real(fftpack.ifft2(fftpack.ifftshift(filtered)))
+    ifft2 = np.maximum(0, np.minimum(ifft2, 255))
+    return ifft2.astype('int32')
+
+
+def gaussian_filter(data, sigma):
+    """Blur an image using a gaussian filter"""
+    return ndimage.gaussian_filter(data, sigma).astype('int32')
+
+
+def find_zingers(image, cut_off, gaus_std):
+    """Creates a 'truth' table of zingers at each pixel location"""
+    # smoothed_img = low_pass_filter(image)
+    smoothed_img = gaussian_filter(image, gaus_std)
+    print(f'average value of data is {np.average(image)}, but {np.average(smoothed_img)} after smoothing.')
+    dif_img = np.subtract(smoothed_img, image)
+
+    print(f'{image.shape[0] * image.shape[1]} pixels in data')
+
+    zinger_chart = dif_img / (smoothed_img + 1)
+    anomalies1 = zinger_chart < -cut_off
+    anomalies2 = zinger_chart > cut_off
+    anomalies = anomalies1 | anomalies2
+    print(f'Found {np.sum(anomalies)} zingers')
+    return anomalies.astype('int32')
+
+
+def remove_zingers(image, cut_off, gaus_std):
+    """Finds zingers and then replaces them with the average value of 2 pixels away in each direction"""
+    zingers = find_zingers(image, cut_off, gaus_std)
+    zinger_locs = np.where(zingers)
+    max_r, max_c = image.shape
+    for row, col in zip(zinger_locs[0], zinger_locs[1]):
+        up = row - 2
+        down = (row + 2) % max_r
+        left = col - 2
+        right = (col + 2) % max_c
+        image[row, col] = np.average((image[up, col], image[down, col],
+                                      image[row, left], image[row, right]))
+    return image
