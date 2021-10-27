@@ -1,6 +1,6 @@
 import fabio
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 import tkinter as tk
 from tkinter import filedialog
 import os
@@ -16,8 +16,6 @@ class Setup_Window(tk.Tk):
     default_output_path = f'{os.getcwd()}{os.sep}raw_data'
 
     def __init__(self):
-        self.data_flip = None
-
         """Set up Window"""
 
         tk.Tk.__init__(self)
@@ -118,40 +116,68 @@ class Setup_Window(tk.Tk):
         self.files_entry.delete(0, tk.END)
         self.files_entry.insert(0, str(files).strip('[').strip(']').replace("'", ''))
 
-    def low_pass_filter(self, keep_fraction):
-        print(f'\nAppling low pass filter with fractional cut off of {keep_fraction}')
-        plt.figure()
-        plt.imshow(self.data_flip)
-        data_fft = fftpack.fft2(self.data_flip)
-        data_fft2 = data_fft.copy()
+    def low_pass_filter(self, data):
+        fft1 = fftpack.fftshift(fftpack.fft2(data))
 
-        def plot_spectrum(data_fft):
-            from matplotlib.colors import LogNorm
-            plt.imshow(np.abs(data_fft), norm=LogNorm(vmin=5))
-            plt.colorbar()
-        plt.figure()
-        plot_spectrum(data_fft)
+        y, x = data.shape
 
-        r, c = data_fft2.shape
-        """set all rows with indices between r*keep_fraction and r*(1-keep_fraction) to 0"""
-        data_fft2[int(r*keep_fraction):int(r*(1-keep_fraction))] = 0
-        # data_fft2[0:int(r * keep_fraction)] = 0
-        """now with columns"""
-        data_fft2[:, int(c * keep_fraction):int(c*(1-keep_fraction))] = 0
-        # data_fft2[:, 0:int(c * keep_fraction)] = 0
+        r = y / 1.5                                                     # Size of circle
+        bbox = ((x - r) / 2, (y - r) / 2, (x + r) / 2, (y + r) / 2)     # Create a box
 
-        plt.figure()
-        plot_spectrum(data_fft2)
+        low_pass = Image.new("L", (x, y), color=0)
 
-        self.data_flip = fftpack.ifft2(data_fft2).real
+        draw1 = ImageDraw.Draw(low_pass)
+        draw1.ellipse(bbox, fill=1)
 
-        plt.figure()
-        plt.imshow(self.data_flip)
+        low_pass_array = np.array(low_pass)
+        filtered = np.multiply(fft1, low_pass_array)
 
-        plt.show()
-        
-    def gaussian_filter(self, filtering):
-        self.data_flip = ndimage.gaussian_filter(self.data_flip, filtering)
+        ifft2 = np.real(fftpack.ifft2(fftpack.ifftshift(filtered)))
+        ifft2 = np.maximum(0, np.minimum(ifft2, 255))
+        return ifft2.astype('int32')
+
+    def gaussian_filter(self, data, sigma):
+        return ndimage.gaussian_filter(data, sigma).astype('int32')
+
+    def find_zingers(self, image, cut_off, gaus_std):
+        # smoothed_img = self.low_pass_filter(image)
+        smoothed_img = self.gaussian_filter(image, gaus_std)
+        print(f'average value of data is {np.average(image)}, but {np.average(smoothed_img)} after smoothing.')
+        dif_img = np.subtract(smoothed_img, image)
+
+        # print('\nsample from data')
+        # starty = 248
+        # startx = 1567
+        # look_range = 12
+        # print(image[starty:starty + look_range, startx:startx + look_range])
+        # print('\nsame range smoothed')
+        # print(smoothed_img[starty:starty + look_range, startx:startx + look_range])
+        # print('\ndifferences')
+        # print(dif_img[starty:starty + look_range, startx:startx + look_range])
+        print(f'{image.shape[0] * image.shape[1]} pixels in data')
+        # print(f'{np.sum(smoothed_img == 0)} zeros in smoothed data')
+        # print(f'{np.sum(dif_img == 0)} zeros in dif')
+        # print(f'{np.sum(dif_img < 0)} negative numbers in dif')
+        zinger_chart = dif_img / (smoothed_img + 1)
+        # print(anomalies[starty:starty + look_range, startx:startx + look_range])
+        anomalies1 = zinger_chart < -cut_off
+        anomalies2 = zinger_chart > cut_off
+        anomalies = anomalies1 | anomalies2
+        print(f'Found {np.sum(anomalies)} zingers')
+        return anomalies.astype('int32')
+
+    def remove_zingers(self, image, cut_off, gaus_std):
+        zingers = self.find_zingers(image, cut_off, gaus_std)
+        zinger_locs = np.where(zingers)
+        max_r, max_c = image.shape
+        for row, col in zip(zinger_locs[0], zinger_locs[1]):
+            up = row - 2
+            down = (row + 2) % max_r
+            left = col - 2
+            right = (col + 2) % max_c
+            image[row, col] = np.average((image[up, col], image[down, col],
+                                          image[row, left], image[row, right]))
+        return image
 
 
     def start_flipping(self):
@@ -166,14 +192,12 @@ class Setup_Window(tk.Tk):
         for filename in filenames:
             print(f'    {filename}')
             data = fabio.open(filename).data
-            self.data_flip = np.flip(data)
-            #if self.flip_entry.get():
-            if 1:
-                self.low_pass_filter(.1)
-                # self.gaussian_filter(4)
+            data_flip = np.flip(data)
+            for _ in range(3):
+                data_flip = self.remove_zingers(data_flip, 1.2, 3)
             fname = filename[:filename.find('.')]       # strip everything after the first '.'
-            save_name = f'{self.output_entry.get()}{os.sep}{fname}_flip-d.tif'
-            Image.fromarray(self.data_flip).save(save_name)
+            save_name = f'{self.output_entry.get()}{os.sep}{fname}_flip-dz.tif'
+            Image.fromarray(data_flip).save(save_name)
         self.killWindow()
 
     def killWindow(self):
