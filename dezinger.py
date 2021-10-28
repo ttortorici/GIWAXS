@@ -1,6 +1,7 @@
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy import fftpack, ndimage
+import fabio
 
 
 def low_pass_filter(img):
@@ -41,7 +42,7 @@ def find_zingers(image, cut_off, gaus_std):
 
     zinger_chart = dif_img / (smoothed_img + 1)
     anomalies1 = zinger_chart < -cut_off
-    anomalies2 = zinger_chart > cut_off
+    anomalies2 = zinger_chart > cut_off * 2
     anomalies = anomalies1 | anomalies2
     print(f'Found {np.sum(anomalies)} zingers')
     return anomalies.astype('int32')
@@ -60,3 +61,10 @@ def remove_zingers(image, cut_off, gaus_std):
         image[row, col] = np.average((image[up, col], image[down, col],
                                       image[row, left], image[row, right]))
     return image
+
+
+def remove_zingers2(filename, cut_off=1.2, gaus_std=3, dezings=1):
+    image = fabio.open(filename).data
+    for ii in range(dezings):
+        print(f'Dezingering attempt {ii + 1}')
+        image = remove_zingers()
