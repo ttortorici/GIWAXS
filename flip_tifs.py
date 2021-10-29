@@ -150,15 +150,5 @@ class Setup_Window(tk.Tk):
         self.destroy()
 
 
-def flip_tif(filename, save_path):
-    """Finds a tif at filename and rotates the image 180 degrees and then saves it in the save_path"""
-    data_to_flip = fabio.open(filename).data
-    data_flipped = np.flip(data_to_flip)
-    # extract just the name of the file to save
-    save_fname = filename[filename.replace('/', os.sep.rfind(os.sep)) + 1:filename.find('.')]
-    save_fname = f'{save_path}{os.sep}{save_fname}_flip.tif'
-    Image.fromarray(data_flipped).save(save_fname)
-    return save_fname
-
 if __name__ == '__main__':
     Setup_Window().mainloop()

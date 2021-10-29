@@ -13,6 +13,19 @@ in conda command prompt (windows) or terminal (unix)
     conda install -c conda-forge pyqtgraph
     pip install jupyterlab
 
+------------------------
+Go to /anaconda3/envs/giwaxs/lib/python3.9/site-packages/pyFAI/detectors/_dectris.py
+and add:
+class Eiger_stitch(Eiger2):
+    """
+    Custom Eiger detector for 1x3 stitching
+    """
+    MAX_SHAPE = (1102, 3070)
+    aliases = ["Eiger Stitch"]
+
+to line 388
+-------------------------
+
 
 pygix documentation: https://github.com/tgdane/pygix/wiki
 pyFAI documentation: https://pyfai.readthedocs.io/en/master/index.html

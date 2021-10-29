@@ -1,0 +1,12 @@
+# Nota: C-Order, 1 refers to the Y axis, 2 to the X axis 
+# Calibration done at Fri Oct 29 12:51:51 2021
+poni_version: 2
+Detector: Eiger_stitch
+Detector_config: {}
+Distance: 0.16377355935888424
+Poni1: 0.02031253183198548
+Poni2: 0.1179078905635054
+Rot1: 0.0
+Rot2: 0.0
+Rot3: 0.0
+Wavelength: 1.54185e-10

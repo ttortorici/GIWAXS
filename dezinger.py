@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy import fftpack, ndimage
@@ -63,8 +64,11 @@ def remove_zingers(image, cut_off, gaus_std):
     return image
 
 
-def remove_zingers2(filename, cut_off=1.2, gaus_std=3, dezings=1):
+def remove_zingers_from_file(filename, cut_off=1.2, gaus_std=3, dezings=1):
     image = fabio.open(filename).data
     for ii in range(dezings):
         print(f'Dezingering attempt {ii + 1}')
-        image = remove_zingers()
+        image = remove_zingers(image, cut_off, gaus_std)
+    save_fname = f'{filename[:filename.find(".")]}_dz{dezings}.tif'
+    Image.fromarray(image).save(save_fname)
+    return save_fname
