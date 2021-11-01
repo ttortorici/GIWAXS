@@ -83,14 +83,14 @@ def plot_rings():
             writer.writerow(values)'''
 
 
-def sector_cut(full_data, chi_center=0, chi_width=180., radial_range=(0, 2.5)):
+def sector_cut(full_data, resolution=1000, chi_center=0, chi_width=180., radial_range=(0, 2.5)):
     """This saves a plot of a line cut using pygic
     pg - calibration object
     data - tif data set
     chi_center - azimuthal angle starting on the z axis and moving clockwise positive [degrees]
     chi_width = total angle of cut centered around chi_center [degrees]"""
     pg, data = full_data
-    i_linecut, q = pg.profile_sector(data, npt=1000, chi_pos=chi_center, chi_width=chi_width,
+    i_linecut, q = pg.profile_sector(data, npt=resolution, chi_pos=chi_center, chi_width=chi_width,
                                      radial_range=radial_range, unit='q_A^-1', correctSolidAngle=False, method='bbox')
     return q, i_linecut
 
@@ -158,7 +158,7 @@ def load_calibration():
 
     pg.sample_orientation = sample_orientation_g
     pg.incident_angle = incident_angle_g  # * np.pi / 180.
-    pg.title_angle = 0
+    pg.tilt_angle = 0
 
     sample_orientation = 'horizontal' if sample_orientation_g == 1 else 'vertical'
     print(f'\nWith a {sample_orientation} sample,')
