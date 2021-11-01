@@ -11,10 +11,11 @@ in conda command prompt (windows) or terminal (unix)
     conda install -c conda-forge pyopencl
     pip install pyqt5
     conda install -c conda-forge pyqtgraph
-    pip install jupyterlab
+    conda install -c conda-forge jupyterlab
 
 ------------------------
 Go to /anaconda3/envs/giwaxs/lib/python3.9/site-packages/pyFAI/detectors/_dectris.py
+on windows \anaconda3\envs\giwaxs\lib\site-packages\pyFAI\detectors\_dectris.py
 and add:
 class Eiger_stitch(Eiger2):
     """
