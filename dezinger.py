@@ -3,6 +3,8 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy import fftpack, ndimage
 import fabio
+import pyqtgraph as pg
+from pyqtgraph.Qt import QtGui
 
 
 def low_pass_filter(img):
@@ -61,14 +63,54 @@ def remove_zingers(image, cut_off, gaus_std):
         right = (col + 2) % max_c
         image[row, col] = np.average((image[up, col], image[down, col],
                                       image[row, left], image[row, right]))
-    return image
+    return image, zingers
 
 
-def remove_zingers_from_file(filename, cut_off=1.2, gaus_std=3, dezings=1):
+def remove_zingers_from_file(filename, cut_off=1.2, gaus_std=3, dezings=1, show=False):
+    window = Plot() if show else None
     image = fabio.open(filename).data
+    zingers = np.zeros(image.shape)
+    if show:
+        window.add_image(image)
     for ii in range(dezings):
         print(f'Dezingering attempt {ii + 1}')
-        image = remove_zingers(image, cut_off, gaus_std)
+        image, zingers_temp = remove_zingers(image, cut_off, gaus_std)
+        zingers += zingers_temp
+    if show:
+        window.add_image(zingers)
+        window.add_image(image)
+        window.show()
     save_fname = f'{filename[:filename.find(".")]}_dz{dezings}.tif'
     Image.fromarray(image).save(save_fname)
     return save_fname
+
+
+class Plot:
+    def __init__(self):
+        self.app = pg.QtGui.QApplication([])
+        self.win = QtGui.QMainWindow()
+        self.win.resize(1900, 1000)
+        self.win.setWindowTitle('Zinger Removal')
+
+        # enable antiailiasing
+        pg.setConfigOptions(antialias=True)
+
+        # container widget with layout to add QWidgets
+        self.cw = QtGui.QWidget()
+        self.win.setCentralWidget(self.cw)
+        self.layout = QtGui.QVBoxLayout()
+        self.cw.setLayout(self.layout)
+
+    def add_image(self, img_data):
+        img_data = np.rot90(np.rot90(img_data.T))
+        img = pg.ImageView()
+        img.setImage(img_data)
+        self.layout.addWidget(img)
+
+    def show(self):
+        self.win.show()
+        self.app.exec_()
+
+if __name__ == '__main__':
+    filename = '/home/etortoric/Documents/GitHub/GIWAXS/raw_data/TT5mm-01-benzeneTPP_60min_flip.tif'
+    remove_zingers_from_file(filename, dezings=3, show=True)

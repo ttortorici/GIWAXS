@@ -6,7 +6,7 @@ from PIL import Image
 
 
 def view(filename):
-    pg.image(np.rot90(fabio.open(filename).data, -1))
+    pg.image(np.rot90(np.rot90(fabio.open(filename).data.T)))
 
 
 def size(filename):
