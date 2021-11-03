@@ -1,5 +1,6 @@
 import pyqtgraph as pg
 import numpy as np
+import window
 
 
 unit_lookup = {'a': '<math>&#8491;</math>',
@@ -15,6 +16,23 @@ def show_plot(x, y, title='', labels=('', ''), units=('', ''), fontsize=14):
             plot.setLabel(axis, label, unit_lookup[unit], color='#FFFFFF', **{'font-size': f'{fontsize}pt'})
         else:
             plot.setLabel(axis, label, unit, color='#FFFFFF', **{'font-size': f'{fontsize}pt'})
+    return plot
+
+def show_plot2(x, y1, y2, title='', y_labels=('', ''), labels=('', ''), units=('', ''),
+               colors=('g', 'y'), fontsize=14):
+    plot = pg.plot()
+    plot.setWindowTitle(title)
+    plot.addLegend()
+
+    c1 = plot.plot(x=x, y=y1, pen=colors[0], name=y_labels[0])
+    c2 = plot.plot(x=x, y=y2, pen=colors[1], name=y_labels[1])
+    for label, unit, axis in zip(labels, units, ('bottom', 'left')):
+        if unit in unit_lookup.keys():
+            plot.setLabel(axis, label, unit_lookup[unit], color='#FFFFFF', **{'font-size': f'{fontsize}pt'})
+        else:
+            plot.setLabel(axis, label, unit, color='#FFFFFF', **{'font-size': f'{fontsize}pt'})
+    window.bring_to_top(plot)
+    return plot
 
 
 class Plot4(pg.QtGui.QMainWindow):

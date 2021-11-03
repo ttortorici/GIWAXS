@@ -5,8 +5,11 @@ import fabio
 from PIL import Image
 
 
-def view(filename):
-    pg.image(np.rot90(np.rot90(fabio.open(filename).data.T)))
+def view(filename, title=''):
+    if not title:
+        slash_loc = filename.replace('/', os.sep).rfind(os.sep)
+        title = filename[slash_loc + 1:]
+    pg.image(np.rot90(np.rot90(fabio.open(filename).data.T)), title=title)
 
 
 def size(filename):

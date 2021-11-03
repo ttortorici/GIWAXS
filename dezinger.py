@@ -5,6 +5,7 @@ from scipy import fftpack, ndimage
 import fabio
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui
+import window
 
 
 def low_pass_filter(img):
@@ -45,8 +46,8 @@ def find_zingers(image, cut_off, gaus_std):
 
     zinger_chart = dif_img / (smoothed_img + 1)
     anomalies1 = zinger_chart < -cut_off
-    anomalies2 = zinger_chart > cut_off * 2
-    anomalies = anomalies1 | anomalies2
+    # anomalies2 = zinger_chart > cut_off * 2
+    anomalies = anomalies1  # | anomalies2
     print(f'Found {np.sum(anomalies)} zingers')
     return anomalies.astype('int32')
 
@@ -67,19 +68,27 @@ def remove_zingers(image, cut_off, gaus_std):
 
 
 def remove_zingers_from_file(filename, cut_off=1.2, gaus_std=3, dezings=1, show=False):
-    window = Plot() if show else None
+    # window = Plot() if show else None
     image = fabio.open(filename).data
     zingers = np.zeros(image.shape)
     if show:
-        window.add_image(image)
+        # window.add_image(image)
+        w1 = pg.image(np.rot90(np.rot90(image.T)), title='Original')
     for ii in range(dezings):
-        print(f'Dezingering attempt {ii + 1}')
+        print(f'\nDezingering attempt {ii + 1}')
         image, zingers_temp = remove_zingers(image, cut_off, gaus_std)
         zingers += zingers_temp
     if show:
-        window.add_image(zingers)
-        window.add_image(image)
-        window.show()
+        w2 = pg.image(np.rot90(np.rot90(zingers.T)), title='Zinger Locations')
+        w3 = pg.image(np.rot90(np.rot90(image.T)), title='Dezingered')
+        winh = 303
+        barh = 32
+        w1.setGeometry(0, barh, 1000, winh)
+        w2.setGeometry(0, barh*2+winh, 1000, winh)
+        w3.setGeometry(0, barh*3+winh*2, 1000, winh)
+        window.bring_to_top(w1)
+        window.bring_to_top(w2)
+        window.bring_to_top(w3)
     save_fname = f'{filename[:filename.find(".")]}_dz{dezings}.tif'
     Image.fromarray(image).save(save_fname)
     return save_fname
@@ -87,7 +96,7 @@ def remove_zingers_from_file(filename, cut_off=1.2, gaus_std=3, dezings=1, show=
 
 class Plot:
     def __init__(self):
-        self.app = pg.QtGui.QApplication([])
+        self.app = pg.QtGui.QApplication(sys.argv)
         self.win = QtGui.QMainWindow()
         self.win.resize(1900, 1000)
         self.win.setWindowTitle('Zinger Removal')
@@ -109,7 +118,8 @@ class Plot:
 
     def show(self):
         self.win.show()
-        self.app.exec_()
+        sys.exit(self.app.exec_())
+
 
 if __name__ == '__main__':
     filename = '/home/etortoric/Documents/GitHub/GIWAXS/raw_data/TT5mm-01-benzeneTPP_60min_flip.tif'
