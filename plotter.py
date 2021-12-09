@@ -79,4 +79,4 @@ class Plot4(pg.QtGui.QMainWindow):
 
     def closeEvent(self, *args, **kwargs):
         super(pg.QtGui.QMainWindow, self).closeEvent(*args, **kwargs)
-        print('klkjljlkj')
+        # print('klkjljlkj')
