@@ -76,11 +76,35 @@ def write_poni(filename: pathlib.Path, header: list):
             f.write('\n')
 
 if __name__ == '__main__':
-    print('Currently works for .rasx files obtained from 2D-GIWAXS Part Activity in SmartLab Studio-II') 
-    dir = pathlib.Path('C:\\Users\\Teddy\\OneDrive - UCB-O365\\Rogerslab3\\Teddy\\XRD\\AgBe\\COSINC')
-    
-    for f in dir.glob("*image.rasx"):
-        print(f)
-        extract_rasx(f)
+    import sys
+    from tkinter import filedialog
+
+    print('\nCurrently works for .rasx files obtained from 2D-GIWAXS Part Activity in SmartLab Studio-II\n') 
+
+    if len(sys.argv) == 1:
+        dir = pathlib.Path('C:\\Users\\Teddy\\OneDrive - UCB-O365\\Rogerslab3\\Teddy\\XRD\\AgBe\\COSINC')
+        for f in dir.glob("*image.rasx"):
+            print(f)
+            extract_rasx(f)
+
+    elif sys.argv[1].lower() == "--gui":
+        list_of_files = filedialog.askopenfilenames()
+        for f in list_of_files:
+            print(f)
+        sys.exit()
+
+    elif sys.argv[1].lower() == "--help":
+        print("`python extract_rasx.py` will extract data from every rasx in the directory defined in the script\n" \
+              "`python extract_rasx.py --gui` will open a GUI dialog to select .rasx you would like to process\n" \
+              "`python extract_rasx.py [dir path]` will extract all data from [dir path]\n" \
+              "`python extract_rasx.py [file path]` will extract all data from the file")
+        sys.exit()
+    elif sys.argv[1][:-5] == ".rasx":
+        extract_rasx(pathlib.Path(sys.argv[1]))
+    else:
+        dir = pathlib.Path(sys.argv[1])
+        for f in dir.glob("*image.rasx"):
+            print(f)
+            extract_rasx(f)
         
     plt.show()
