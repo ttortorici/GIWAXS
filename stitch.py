@@ -32,13 +32,23 @@ class Detector(Eiger1M):
         
 
 class Stitcher:
+
+    COLUMN_OVERLAP = 10
+    DEAD_BAND_PIXELS = 37
     
-    def __init__(self, rows, columns, exposure_time):
-        self.rows = rows
-        self.columns = columns
+    def __init__(self, stitch_num, exposure_time):
+        self.stitch_num = stitch_num
         self.exposure_time = exposure_time
         self.detector = Eiger1M()
-        self.size = 
+        self.size = self._determine_size()
+
+    def _determine_size(self, size) -> tuple:
+        rows = self.detector.get_rows() + Stitcher.DEAD_BAND_PIXELS
+        columns = self.stitch_num * (self.detector.get_columns() - Stitcher.COLUMN_OVERLAP) + Stitcher.COLUMN_OVERLAP
+        return (rows, columns)
+    
+    def load_data(self):
+        
 
 
 
