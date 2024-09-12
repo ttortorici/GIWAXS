@@ -5,7 +5,7 @@ from scipy import fftpack, ndimage
 import fabio
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui
-import window
+# import window
 
 
 def low_pass_filter(img):
@@ -40,11 +40,9 @@ def find_zingers(image, cut_off, gaus_std):
     # smoothed_img = low_pass_filter(image)
     smoothed_img = gaussian_filter(image, gaus_std)
     print(f'average value of data is {np.average(image)}, but {np.average(smoothed_img)} after smoothing.')
-    dif_img = np.subtract(smoothed_img, image)
-
-    print(f'{image.shape[0] * image.shape[1]} pixels in data')
-
-    zinger_chart = dif_img / (smoothed_img + 1)
+    # dif_img = np.subtract(smoothed_img, image)
+    # print(f'{image.shape[0] * image.shape[1]} pixels in data')
+    zinger_chart = (smoothed_img - image) / (smoothed_img + 1)
     anomalies1 = zinger_chart < -cut_off
     # anomalies2 = zinger_chart > cut_off * 2
     anomalies = anomalies1  # | anomalies2
@@ -86,9 +84,9 @@ def remove_zingers_from_file(filename, cut_off=1.2, gaus_std=3, dezings=1, show=
         w1.setGeometry(0, barh, 1000, winh)
         w2.setGeometry(0, barh*2+winh, 1000, winh)
         w3.setGeometry(0, barh*3+winh*2, 1000, winh)
-        window.bring_to_top(w1)
-        window.bring_to_top(w2)
-        window.bring_to_top(w3)
+        # window.bring_to_top(w1)
+        # window.bring_to_top(w2)
+        # window.bring_to_top(w3)
     save_fname = f'{filename[:filename.find(".")]}_dz{dezings}.tif'
     Image.fromarray(image).save(save_fname)
     return save_fname
